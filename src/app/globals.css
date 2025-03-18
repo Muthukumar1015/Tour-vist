@@ -1,0 +1,4 @@
+body {
+  background: linear-gradient(to bottom, black, #222);
+  color: white; /* Ensures text is readable */
+}
