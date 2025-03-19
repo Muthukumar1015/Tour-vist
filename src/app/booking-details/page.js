@@ -9,12 +9,12 @@ const Booking = () => {
    const searchParams = useSearchParams();
 
    const selectedTrail = {
-      title: searchParams.get("title"),
-      location: "San Francisco",
-      staff: "Staff Member #2",
-      duration: searchParams.get("duration"),
-      price: parseFloat(searchParams.get("price")) || 0,
-      img: searchParams.get("img"),
+      title: searchParams.get("title") || "Unknown Trail",
+      location: searchParams.get("location") || "San Francisco",
+      staff: searchParams.get("staff") || "Staff Member #2",
+      duration: searchParams.get("duration") || "N/A",
+      price: parseFloat(searchParams.get("price")) ||0,
+      img: searchParams.get("img") || "/default.jpg",
    };
 
    const [selectedDate, setSelectedDate] = useState(null);
@@ -36,10 +36,32 @@ const Booking = () => {
       setIsLoggedIn(!!token);
    }, []);
 
+   // Hide past time slots for today
+   const getFilteredTimes = () => {
+      if (!selectedDate) return availableTimes;
+
+      const selectedDateObj = new Date(selectedDate);
+      const currentDate = new Date();
+
+      if (selectedDateObj.toDateString() === currentDate.toDateString()) {
+         const currentHour = currentDate.getHours();
+         return availableTimes.filter((time) => {
+            const [hour, period] = time.split(" ");
+            let timeHour = parseInt(hour, 10);
+            if (period === "pm" && timeHour !== 12) timeHour += 12;
+            return timeHour > currentHour;
+         });
+      }
+      return availableTimes;
+   };
+
+   const filteredTimes = getFilteredTimes();
+
    const handleDateClick = (day) => {
       const selectedFullDate = new Date(year, month, day);
       if (selectedFullDate >= today) {
          setSelectedDate(`${year}-${month + 1}-${day}`);
+         setSelectedTime(null); // Reset time when changing the date
       }
    };
 
@@ -74,7 +96,7 @@ const Booking = () => {
       }
 
       router.push(
-         `/booking-details?title=${encodeURIComponent(selectedTrail.title)}&price=${encodeURIComponent(totalPrice)}&date=${encodeURIComponent(selectedDate)}&time=${encodeURIComponent(selectedTime)}&location=${encodeURIComponent(selectedTrail.location)}&staff=${encodeURIComponent(selectedTrail.staff)}&duration=${encodeURIComponent(selectedTrail.duration)}&members=${members}`
+         `/bookings-details?title=${encodeURIComponent(selectedTrail.title)}&price=${encodeURIComponent(totalPrice)}&date=${encodeURIComponent(selectedDate)}&time=${encodeURIComponent(selectedTime)}&location=${encodeURIComponent(selectedTrail.location)}&staff=${encodeURIComponent(selectedTrail.staff)}&duration=${encodeURIComponent(selectedTrail.duration)}&members=${members}`
       );
    };
 
@@ -128,15 +150,19 @@ const Booking = () => {
                         {new Date(selectedDate).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
                      </p>
                      <div className="d-flex gap-2 flex-wrap">
-                        {availableTimes.map((time, index) => (
-                           <button
-                              key={index}
-                              className={`btn btn-outline-dark ${selectedTime === time ? "selected-time" : ""}`}
-                              onClick={() => setSelectedTime(time)}
-                           >
-                              {time}
-                           </button>
-                        ))}
+                        {filteredTimes.length > 0 ? (
+                           filteredTimes.map((time, index) => (
+                              <button
+                                 key={index}
+                                 className={`btn btn-outline-dark ${selectedTime === time ? "selected-time" : ""}`}
+                                 onClick={() => setSelectedTime(time)}
+                              >
+                                 {time}
+                              </button>
+                           ))
+                        ) : (
+                           <p className="text-muted">No available time slots for today.</p>
+                        )}
                      </div>
                   </>
                )}
@@ -172,7 +198,6 @@ const Booking = () => {
                </div>
             </div>
          </div>
-
          <style jsx>{`
             .calendar-grid {
                display: grid;
@@ -187,7 +212,7 @@ const Booking = () => {
                padding: 10px;
                text-align: center;
                cursor: pointer;
-               border-radius: 5px;
+               border-radius: 50%;
                background: #f8f9fa;
             }
             .calendar-cell.selected {
@@ -198,7 +223,7 @@ const Booking = () => {
                background: lightgray;
             }
             .calendar-cell.disabled {
-               background: #e0e0e0;
+               background:rgb(159, 152, 152);
                cursor: not-allowed;
             }
             .selected-time {
@@ -215,3 +240,4 @@ const Booking = () => {
 };
 
 export default Booking;
+

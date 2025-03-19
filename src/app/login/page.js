@@ -11,6 +11,7 @@ const Auth = () => {
    const [confirmPassword, setConfirmPassword] = useState("");
    const [error, setError] = useState("");
    const [successMessage, setSuccessMessage] = useState("");
+   const [transitioning, setTransitioning] = useState(false); // Handle smooth transition
 
    const handleSubmit = async (e) => {
       e.preventDefault();
@@ -30,27 +31,23 @@ const Auth = () => {
             // Simulate a registration API call
             const response = await fetch("https://jsonplaceholder.typicode.com/users", {
                method: "POST",
-               headers: {
-                  "Content-Type": "application/json",
-               },
+               headers: { "Content-Type": "application/json" },
                body: JSON.stringify({ email, password }),
             });
 
-            if (!response.ok) {
-               throw new Error("Registration failed. Please try again.");
-            }
+            if (!response.ok) throw new Error("Registration failed. Please try again.");
 
-            // Store user data (including email) in localStorage
             localStorage.setItem("user", JSON.stringify({ email, password }));
-            setIsRegister(false); // Switch to login
             setError("");
-            alert("Registration successful! Please log in.");
+            alert("Registration successful! Redirecting to login...");
+
+            // Smooth transition to login page
+            setTimeout(() => setIsRegister(false), 500);
          } catch (err) {
             setError(err.message);
          }
       } else {
          try {
-            // Retrieve stored user data from localStorage
             const storedUser = JSON.parse(localStorage.getItem("user"));
 
             if (!storedUser) {
@@ -58,13 +55,11 @@ const Auth = () => {
                return;
             }
 
-            // Check if the stored email and password match the input
             if (storedUser.email === email && storedUser.password === password) {
                localStorage.setItem("authToken", "sampleToken123");
                setSuccessMessage("Continue your trip plan!");
-               setTimeout(() => {
-                  router.push("/dashboard");
-               }, 5000);
+
+               setTimeout(() => router.push("/dashboard"), 1500);
             } else {
                setError("Invalid email or password!");
             }
@@ -72,6 +67,15 @@ const Auth = () => {
             setError("Login failed! Please try again.");
          }
       }
+   };
+
+   // Handle smooth transition between forms
+   const toggleForm = () => {
+      setTransitioning(true);
+      setTimeout(() => {
+         setIsRegister(!isRegister);
+         setTransitioning(false);
+      }, 500);
    };
 
    // Internal Styles
@@ -90,8 +94,8 @@ const Auth = () => {
       boxShadow: "10px 10px 20px #babecc, -10px -10px 20px #ffffff",
       borderRadius: "10px",
       transition: "transform 0.4s ease-in-out, opacity 0.4s ease-in-out",
-      transform: isRegister ? "translateX(5%)" : "translateX(0%)",
-      opacity: isRegister ? "0.95" : "1",
+      transform: transitioning ? "scale(0.95)" : "scale(1)",
+      opacity: transitioning ? "0.5" : "1",
    };
 
    const popupStyle = {
@@ -153,10 +157,7 @@ const Auth = () => {
             </form>
             <p className="text-center mt-3">
                {isRegister ? "Already have an account?" : "Don't have an account?"}{" "}
-               <button
-                  className="btn btn-link p-0"
-                  onClick={() => setIsRegister(!isRegister)}
-               >
+               <button className="btn btn-link p-0" onClick={toggleForm}>
                   {isRegister ? "Login" : "Register"}
                </button>
             </p>
